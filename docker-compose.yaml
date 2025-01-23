@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: { password root admin }
+      MYSQL_DATABASE: { database name }
+      MYSQL_USER: { admin webapp name }
+      MYSQL_PASSWORD: { password admin webapp }
+    healthcheck:
+      test: ["CMD", "mysql", "-u", "root", "-e", "USE { database name };"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    ports:
+      - '4306:3306'
+    volumes:
+      - ./mysql:/var/lib/mysql
+
+  php:
+    container_name: php
+    build:
+      context: ./php
+    ports:
+      - 8080:80
+      - 8443:443
+    volumes:
+      - ./apache/default.conf:/etc/apache2/sites-enabled/000-default.conf
+      - ./apache/default-ssl.conf:/etc/apache2/sites-enabled/000-default-ssl.conf
+      # - ./etc/ssl:/etc/ssl
+      - ./{ webapp name }:/var/www
+    depends_on:
+      - mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOST: mysql
+      PMA_USER: { admin webapp name }
+      PMA_PASSWORD: { password admin webapp }
+      UPLOAD_LIMIT: 20M
+    ports:
+      - "8889:80"
+    
+  mailhog:
+    image: mailhog/mailhog
+    logging:
+      driver: 'none'
+    ports:
+      - 1025:1025 #SMTP
+      - 8025:8025 #Boite mail
+  
